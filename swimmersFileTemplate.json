@@ -1,0 +1,22 @@
+{
+    "groupName1": {
+        "swimmer1": {
+            "yearOfBirth": 2000,
+            "gender": "M/F"
+        },
+        "swimmer2": {
+            "yearOfBirth": 2001,
+            "gender": "M/F"
+        }
+    },
+    "groupName2": {
+        "swimmer1": {
+            "yearOfBirth": 2002,
+            "gender": "M/F"
+        },
+        "swimmer2": {
+            "yearOfBirth": 2003,
+            "gender": "M/F"
+        }
+    }
+}

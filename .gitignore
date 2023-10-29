@@ -1,0 +1,8 @@
+zips/*
+venv/*
+lefs/*
+excels/*
+.idea/*
+__pycache__/*
+swimmers.json
+variables.py
