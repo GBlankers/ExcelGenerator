@@ -7,10 +7,13 @@ import xml.etree.ElementTree as ET
 import xlsxwriter
 import json
 import datetime
+import re
 
 from zipfile import ZipFile
 from dataclasses import dataclass
 from variables import *
+
+today = datetime.date.today().strftime("%d/%m/%Y")
 
 @dataclass
 class Swimmer:
@@ -29,6 +32,7 @@ class SwimMeet:
 
         # Meet Information
         self.name = None
+        self.ageDate = None
         self.city = None
         self.course = None
         self.qualifyFrom = None
@@ -137,27 +141,34 @@ class SwimMeet:
 
         for meetInfo in self.meetRoot:
             if meetInfo.tag == "QUALIFY":
-                self.qualifyFrom = meetInfo.attrib.get("from", "01/01/2022")
+                self.qualifyFrom = meetInfo.attrib.get("from", today)
                 self.qualifyUntil = meetInfo.attrib.get("until", self.deadline)
                 self.qualify = self.qualifyFrom + " -> " + self.qualifyUntil
             elif meetInfo.tag == "SESSIONS":
                 self.sessionRoot = meetInfo
+            elif meetInfo.tag == "AGEDATE":
+                self.ageDate = meetInfo.attrib.get("value", today)
 
         return self.__parseProgram()
     
 class Club:
-    groups = ["S1", "S2", "S3"]
+    groups = ["LS", "S1", "S2", "S3"]
 
     def __init__(self) -> None:
         self.swimmers = {}
         self.amountOfSwimmers = 0
         self.groupsToUse = self.groups
     
-    def loadFromFile(self, fileName: str, groupsToUse: list[int]) -> None:
+    def loadFromFile(self, fileName: str, groupsToUse: list[int], ageDate: str) -> None:
         with open(fileName, 'r') as f:
             club = json.load(f)
 
-        currentYear = datetime.datetime.now().year
+        extractYear = re.search("(\d\d\d\d)", ageDate)
+        if extractYear is None:
+            currentYear = 2022
+        else:
+            currentYear = int(extractYear.group())
+
         self.groupsToUse = groupsToUse
 
         for group in groupsToUse:
@@ -275,8 +286,7 @@ class Excel:
                 if self.blackout:
                     for blockedNumber in club.swimmers[group][nameOfSwimmer].blockedNumbers:
                         self.registerSheet.write(xlsxwriter.utility.xl_col_to_name(blockedNumber-1)+str(rowIndex), "", self.s_blackedOut)
-
-        rowIndex += 1
+            rowIndex += 1
         print(", ".join(club.groupsToUse) + " added to the register sheet")
 
     def __addEventsToRegisterSheet(self, swimMeet: SwimMeet, club: Club) -> None:
@@ -316,6 +326,7 @@ class Excel:
             for nameOfSwimmer in club.swimmers[group]:
                 rowIndex += 1
                 self.summarySheet.write("A"+str(rowIndex), nameOfSwimmer, self.s_swimmer)
+            rowIndex += 1
 
         # Add the excel formula's
         columnLetter = xlsxwriter.utility.xl_col_to_name(self.registerColumnCounter-1)
@@ -331,6 +342,42 @@ class Excel:
         self.__fillSummarySheet(club)
         self.workbook.close()
         print(f"Excel saved at {self.filename}")
+
+class TimeStandards:
+    standards = []
+    timeStandardsRoot = None
+    timeStandardsNames = set()
+
+    def __init__(self, root) -> None:
+        for node in root:
+            if node.tag == "TIMESTANDARDLISTS":
+                self.timeStandardsRoot = node
+                break
+        
+        if self.timeStandardsRoot == None:
+            print("No time standards present in the lenex")
+            return
+        
+        for i in self.timeStandardsRoot:
+            self.timeStandardsNames.add(i.attrib.get("name", "Invalid"))
+        print(f"Time standards present: {self.timeStandardsNames}")
+
+
+    def loadFromLef(self, name: str):
+        self.standards[name] = {}
+        for timestandardList in self.timeStandardsRoot:
+            if timestandardList.attrib.get("name", "?") != name:
+                continue
+
+            self.standards[name]["type"] = timestandardList.attrib.get("type", "?")
+            
+            for node in timestandardList:
+                if node.tag == "AGEGROUP":
+                    temp["age"] = node.attrib.get("agemin") + " -> " + node.attrib.get("agemax")
+                if node.tag == "TIMESTANDARDS":
+                    for timestandard in node:
+                        print(timestandard.attrib.get("swimtime", "?"))
+
 
 def extractAndLoadLenex():
     print("Select the lxf file.")
@@ -371,13 +418,17 @@ def main():
     # Create a club and select which groups need to be added to the excel
     club = Club()
     groupsToUse = easygui.multchoicebox("Select the groups to use in the excel file", "Group selection", club.groups, preselect="2")
-    club.loadFromFile(jsonFileName, groupsToUse)
 
     # Create a swimmeet
     swimMeet = SwimMeet()
     if swimMeet.createFromLef(root) != 0:
         return
     
+    club.loadFromFile(jsonFileName, groupsToUse, swimMeet.ageDate)
+
+    time = TimeStandards(root)
+    #time.loadFromLef("Loodsvisje 2023")
+
     # Check which swimmers can compete in which events
     club.checkPossibleEvents(swimMeet)
 
