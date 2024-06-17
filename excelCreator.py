@@ -41,6 +41,9 @@ class SwimMeet:
         self.program = {}
 
     def __simplifyAge(self, age: str) -> str:
+        if not age:
+            return 0, 99, "open"
+
         ageString = ("/".join(age.split("-"))).replace("+", "").replace("open", "")
         ageArray = [int(x) for x in ageString.split("/") if x != ""]
         ageMax = max(ageArray)
