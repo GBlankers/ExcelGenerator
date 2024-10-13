@@ -8,6 +8,7 @@ import xlsxwriter
 import json
 import datetime
 import re
+import subprocess
 
 from zipfile import ZipFile
 from dataclasses import dataclass
@@ -416,6 +417,7 @@ def extractAndLoadLenex():
     return root
 
 def main():
+    subprocess.call(["/bin/bash", "./parseMDB.sh", mdbPath])
     # Open GUI to select a lenex, extract the xml and save in root
     root = extractAndLoadLenex()
     
