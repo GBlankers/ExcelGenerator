@@ -36,6 +36,7 @@ class SwimMeet:
         self.city = None
         self.course = None
         self.qualifyFrom = None
+        self.qualify = ""
         self.qualifyUntil = None
         self.deadline = None
         self.program = {}
