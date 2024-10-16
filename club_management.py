@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 import os
+import csv
 import subprocess
 
 class Gender(Enum):
@@ -18,11 +19,11 @@ class Swimmer:
 class Club:
     ACTIVE = "T"
 
-    def __init__(self, members_list):
+    def __init__(self, name: str):
         self.members = dict()
-        self.__fill_club_from_members_list(members_list)
+        self.club_name = name
 
-    def __fill_club_from_members_list(self, members_list):
+    def __fill_club_from_members_list(self, members_list: list):
         # Get the indices of the different fields of the headers
         index_last_name = members_list[0].index("LASTNAME")
         index_first_name = members_list[0].index("FIRSTNAME")
@@ -53,23 +54,35 @@ class Club:
                 # Append the athlete to the correct group
                 self.members[group].append(athlete[index_first_name])
 
+    def __read_members_from_mdb(self, mdbPath: str) -> str:
+        if os.path.splitext(mdbPath)[1] != '.mdb':
+            raise ValueError("Given path to database is not an mdb")
+
+        if os.path.exists(os.path.splitext(mdbPath)[0] + '.ldb'):
+            raise RuntimeError("Database is locked")
+
+        try:
+            result = subprocess.run(['mdb-export', mdbPath, 'MEMBERS'], 
+                                    capture_output=True, 
+                                    text=True, 
+                                    check=True)
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError(f"Error extracting data from database: {e}")
+        
+        return result.stdout
+
+    def fill_using_team_manager_mdb(self, mdb_path: str):
+        # Extract members from the team manager database
+        members_csv = self.__read_members_from_mdb(mdb_path)
+        if members_csv == "":
+            raise RuntimeError("Empty members csv")
+
+        members_list = list(csv.reader(members_csv.split('\n')))
+        if len(members_list) <= 1:
+            raise ValueError("Members list is empty")
+
+        self.__fill_club_from_members_list(members_list)
+
     def __str__(self):
-        return str(self.members)
+        return f"{self.club_name} contains the following members:\n" + str(self.members)
 
-
-def read_members_from_mdb(mdbPath: str) -> str:
-    if os.path.splitext(mdbPath)[1] != '.mdb':
-        raise ValueError("Given path to database is not an mdb")
-
-    if os.path.exists(os.path.splitext(mdbPath)[0] + '.ldb'):
-        raise RuntimeError("Database is locked")
-
-    try:
-        result = subprocess.run(['mdb-export', mdbPath, 'MEMBERS'], 
-                                capture_output=True, 
-                                text=True, 
-                                check=True)
-    except subprocess.CalledProcessError as e:
-        raise RuntimeError(f"Error extracting data from database: {e}")
-    
-    return result.stdout
