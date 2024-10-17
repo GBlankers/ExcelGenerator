@@ -11,7 +11,7 @@ def main() -> None:
     club = Club(settings.club_name)
     club.fill_using_team_manager_mdb(settings.mdb_path)
     
-    print(club)
+    
 
 
 if __name__ == "__main__":

@@ -12,9 +12,13 @@ class Gender(Enum):
 @dataclass
 class Swimmer:
     name: str
-    age: int
+    birth_data: str
     gender: Gender
     group: str
+
+    def __str__(self):
+        return self.name
+
 
 class Club:
     ACTIVE = "T"
@@ -30,7 +34,7 @@ class Club:
         index_gender = members_list[0].index("GENDER")
         index_active = members_list[0].index("ACTIVE")
         index_groups = members_list[0].index("GROUPS")
-        index_birth_data = members_list[0].index("BIRTHDATE")
+        index_birth_date = members_list[0].index("BIRTHDATE")
 
         # Remove the first entry as this contains the headers
         members_list.pop(0)
@@ -51,8 +55,11 @@ class Club:
                 if group not in self.members:
                     self.members[group] = []
             
-                # Append the athlete to the correct group
-                self.members[group].append(athlete[index_first_name])
+                # Append the athlete to the correct group 
+                self.members[group].append(Swimmer(athlete[index_first_name] + " " + athlete[index_last_name],
+                                                   athlete[index_birth_date].split(' ')[0],
+                                                   athlete[index_gender],
+                                                   group))
 
     def __read_members_from_mdb(self, mdbPath: str) -> str:
         if os.path.splitext(mdbPath)[1] != '.mdb':
