@@ -1,5 +1,6 @@
 from easygui import fileopenbox
 from zipfile import ZipFile
+from datetime import date
 
 import xml.etree.ElementTree as ET
 import os
@@ -50,12 +51,24 @@ class SwimMeet:
         self.course = None
         self.qualify_date_range = None
         self.deadline = None
+        self.age_date = None
         self.program = dict()
     
     def __extract_general_information(self, meet_root: ET.Element):
+        today = date.today().strftime("%d%m%Y")
+
         self.meet_name = meet_root.attrib.get('name', '?').replace('/', '-')
         self.city = meet_root.attrib.get('city', '?')
         self.course = meet_root.attrib.get('course', 'LCM')
+        self.deadline = meet_root.attrib.get('deadline', today)
+
+        for meet_info in meet_root:
+            if meet_info.tag == "QUALIFY":
+                qualify_from = meet_info.attrib.get("from", today)
+                qualify_until = meet_info.attrib.get("until", self.deadline)
+                self.qualify_date_range = f"{qualify_from} -> {qualify_until}"
+            elif meet_info.tag == "AGEDATE":
+                self.age_date = meet_info.attrib.get("value", today)
 
     def load_from_xml(self, lef_root_node: ET.Element):
         # Extract all information from the xml
