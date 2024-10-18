@@ -1,3 +1,5 @@
+from easygui import diropenbox, fileopenbox
+
 import pickle
 import os
 
@@ -7,6 +9,7 @@ class Settings:
     def __init__(self):
         self.club_name = ""
         self.mdb_path = ""
+        self.default_competition_path = ""
     
     @staticmethod
     def init_settings():
@@ -19,7 +22,8 @@ class Settings:
         setting = Settings()
         print("No settings save file found")
         setting.club_name = input("Club name: ")
-        setting.mdb_path = input("Team manager mdb path: ") # TODO using gui to select path
+        setting.mdb_path = fileopenbox(title="Select the team manager mdb")
+        setting.default_competition_path = diropenbox(title="Select the directory with the competition folders")
 
         # Save current settings
         with open(Settings.SAVE_FILE, "wb") as fi:

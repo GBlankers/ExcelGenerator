@@ -1,11 +1,6 @@
-zips/*
 venv/*
-lefs/*
+tmp/*
 excels/*
-.idea/*
 __pycache__/*
-swimmers.json
-variables.py
 KAZSC.mdb
-members.csv
 .settings.pk
