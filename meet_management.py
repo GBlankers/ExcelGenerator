@@ -17,6 +17,9 @@ class LenexHelper:
         # Select the lenex
         self.full_path = fileopenbox(default=self.start_dir,
                                 title="Select competition lenex file")
+
+        if self.full_path == None:
+            raise ValueError("Invalid file selected")
         
         self.basename = os.path.basename(self.full_path)
         self.dirname = os.path.dirname(self.full_path)

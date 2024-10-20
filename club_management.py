@@ -91,5 +91,11 @@ class Club:
         self.__fill_club_from_members_list(members_list)
 
     def __str__(self):
-        return f"{self.club_name} contains the following members:\n" + str(self.members)
+        return_str = f"{self.club_name}:\n"
+        for group in self.members:
+            return_str += f"{group}: "
+            for athlete in self.members[group]:
+                return_str += f"{str(athlete)};"
+            return_str += "\n"
 
+        return return_str
