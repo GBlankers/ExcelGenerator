@@ -72,17 +72,128 @@ class SwimMeet:
                 self.qualify_date_range = f"{qualify_from} -> {qualify_until}"
             elif meet_info.tag == "AGEDATE":
                 self.age_date = meet_info.attrib.get("value", today)
+    
+    def __parse_swimstyle_node(self, node: ET.Element) -> str:
+        if int(node.attrib["relaycount"]) > 1:
+            return f"{node.attrib['relaycount']} x {node.attrib['distance']} {node.attrib['stroke']}"
+
+        return f"{node.attrib['distance']} {node.attrib['stroke']}"
+
+    def __parse_agegroups_node(self, node: ET.Element) -> str:
+        """Construct a structured string with all ages"""
+        age = ""
+        for age_group in node:
+            min_age = age_group.attrib["agemin"]
+            max_age = age_group.attrib["agemax"]
+            if min_age == "-1" and max_age == "-1":
+                age = age + "/open"
+            elif max_age == "-1":
+                age = age + "/" + min_age + "+"
+            else:
+                if min_age == max_age:
+                    age = age + "/" + min_age
+                else:
+                    age = age + "/" + min_age + "-" + max_age
+    
+    def __simplify_age(self, age_str: str) -> tuple[int, int, str]:
+        if not age_str or age_str == "":
+            return 0, 99, "open"
+        
+        temp_str = ("/".join(age_str.split("-"))).replace("+", "").replace("open", "")
+        age_array = [int(x) for x in temp_str.split("/") if x != ""]
+        age_max = max(age_array)
+        age_min = min(age_array)
+
+        if "+" in age_str or "open" in age_str:
+            simplified_str = f"{age_min} -> open"
+            age_max = 99
+        else:
+            simplified_str = f"{age_min} -> {age_max}"
+        
+        return age_min, age_max, simplified_str
+    
+    def __extract_event_information(self, event: ET.Element) -> dict:
+        # Event number
+        number = event.attrib.get("number", "?")
+
+        # Gender
+        gender = event.attrib.get("gender", "X")
+        if gender == "X":
+            gender = "Mixed"
+        
+        style = ""
+        for event_info in event:
+            if event_info.tag == "SWIMSTYLE":
+                style = self.__parse_swimstyle_node(event_info)
+            elif event_info.tag == "AGEGROUPS":
+                age_string = self.__parse_agegroups_node(event_info)
+
+        min_age, max_age, simplified_age = self.__simplify_age(age_string)
+
+        print(f"Extracted number {number}:\t{gender}\t{simplified_age}\t{style}")
+        
+        return dict(number = number,
+                    gender = gender,
+                    style = style,
+                    min_age = min_age,
+                    max_age = max_age,
+                    simplified_age = simplified_age
+                    )
+    
+    def __parse_events(self, events_root: ET.Element, s: dict):
+        for event in events_root:
+            s["events"].append(self.__extract_event_information(event))
+    
+    def __parse_session(self, session_root: ET.Element):
+        # Extract general session information
+        session_attributes = session_root.attrib
+        s = dict(session_number = session_attributes.get("number", "1"),
+                 session_date = session_attributes.get("date", "?"),
+                 sessuib_start = session_attributes.get("daytime", "?"),
+                 session_end = session_attributes.get("endtime", "?"),
+                 session_warmup_start = session_attributes.get("warmupfrom", "?"),
+                 session_warmup_until = session_attributes.get("warmupuntil", "?"),
+                 session_official_meeting = session_attributes.get("officialmeeting", "?"),
+                 events = []
+                )
+        
+        for event_node in session_root:
+            if event_node.tag == "EVENTS":
+                events_root = event_node
+        
+        if events_root == None:
+            raise ValueError("Session does not have events")
+        
+        # Parse events and add to temp session dict s
+        self.__parse_events(events_root, s)
+        
+        # Append this session to the program
+        self.program[session_attributes.get("name", f"Session {s['session_number']}")] = s
+    
+    def __parse_sessions(self, meet_root: ET.Element):
+        for meet_info in meet_root:
+            if meet_info.tag == "SESSIONS":
+                session_root = meet_info
+                break
+        
+        if session_root == None:
+            raise ValueError("No sessions found in lenex")
+        
+        for session in session_root:
+            self.__parse_session(session)
 
     def load_from_xml(self, lef_root_node: ET.Element):
         # Extract all information from the xml
         for meets in lef_root_node:
             if meets.tag == "MEETS":
+                # Meets will mostly be only 1 meet, multi meet lenex not supported
                 meet_root = meets[0]
         
         if meet_root == None:
             raise ValueError("Swimmeet could not be created from the given lenex")
 
         self.__extract_general_information(meet_root)
+        self.__parse_sessions(meet_root)
 
     def __str__(self):
-        return f"MEET:\n{self.meet_name} in {self.city} ({self.course})"
+        return f"MEET:\n{self.meet_name} in {self.city} ({self.course})\n{self.program}"

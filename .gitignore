@@ -4,3 +4,4 @@ excels/*
 __pycache__/*
 KAZSC.mdb
 .settings.pk
+.vscode

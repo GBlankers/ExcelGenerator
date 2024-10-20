@@ -12,8 +12,6 @@ def main() -> None:
     club = Club(settings.club_name)
     club.fill_using_team_manager_mdb(settings.mdb_path)
 
-    print(club)
-    
     lenex = LenexHelper(settings.default_competition_path)
     lenex.load_lenex()
     lenex.extract_lef_from_lenex()
