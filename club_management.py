@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from enum import Enum
+from datetime import datetime
 
+import re
 import os
 import csv
 import subprocess
@@ -15,6 +17,23 @@ class Swimmer:
     birth_data: str
     gender: Gender
     group: str
+
+    def get_age_at(self, date_str: str) -> int:
+
+        birth_year_short = int(self.birth_data[-2:])
+        meet_year = re.search("(\d\d\d\d)", date_str)
+
+        if meet_year is None:
+            meet_year_short = str(datetime.now().year)[-2]
+        else:
+            meet_year_short = int(meet_year.group()[-2:])
+
+        if meet_year_short - birth_year_short < 0:
+            return meet_year_short + (100-birth_year_short)
+
+        temp = meet_year_short - birth_year_short
+
+        return meet_year_short - birth_year_short
 
     def __str__(self):
         return self.name
@@ -89,6 +108,17 @@ class Club:
             raise ValueError("Members list is empty")
 
         self.__fill_club_from_members_list(members_list)
+    
+    def get_groups(self) -> list[str]:
+        return sorted(list(self.members.keys()))
+
+    def get_swimmers_from_group(self, group_name: str) -> list[Swimmer]:
+        return self.members[group_name]
+
+    def get_swimmer_names_from_group(self, group_name: str) -> list[str]:
+        '''Sort the list on last name for more easy entry in teammanager'''
+        sorted_2d_list = sorted([str(swimmer_name).split(' ', 1) for swimmer_name in self.members[group_name]], key=lambda x: x[-1])
+        return [' '.join(swimmer) for swimmer in sorted_2d_list]
 
     def __str__(self):
         return_str = f"{self.club_name}:\n"

@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from easygui import fileopenbox
 from zipfile import ZipFile
 from datetime import date
@@ -44,6 +45,20 @@ class LenexHelper:
         if self.xml_root.tag != "LENEX":
             raise ValueError("Extracted xml is not a lenex!")
 
+@dataclass
+class SwimMeetEvent:
+    number: int
+    gender: str
+    style: str
+    min_age: int
+    max_age: int
+    simplified_age: str
+
+    def __str__(self):
+        return f"#{self.number} {self.gender} {self.style} {self.simplified_age}"
+
+    def __hash__(self):
+        return hash(self.__str__())
 
 class SwimMeet:
     """Class to group the information of a meet"""
@@ -86,14 +101,15 @@ class SwimMeet:
             min_age = age_group.attrib["agemin"]
             max_age = age_group.attrib["agemax"]
             if min_age == "-1" and max_age == "-1":
-                age = age + "/open"
+                age = f"{age}/open"
             elif max_age == "-1":
-                age = age + "/" + min_age + "+"
+                age = f"{age}/{min_age}+"
             else:
                 if min_age == max_age:
-                    age = age + "/" + min_age
+                    age = f"{age}/{min_age}"
                 else:
-                    age = age + "/" + min_age + "-" + max_age
+                    age = f"{age}/{min_age}-{max_age}"
+        return age
     
     def __simplify_age(self, age_str: str) -> tuple[int, int, str]:
         if not age_str or age_str == "":
@@ -114,7 +130,7 @@ class SwimMeet:
     
     def __extract_event_information(self, event: ET.Element) -> dict:
         # Event number
-        number = event.attrib.get("number", "?")
+        number = int(event.attrib.get("number", "?"))
 
         # Gender
         gender = event.attrib.get("gender", "X")
@@ -122,23 +138,18 @@ class SwimMeet:
             gender = "Mixed"
         
         style = ""
+        age_string = ""
         for event_info in event:
             if event_info.tag == "SWIMSTYLE":
                 style = self.__parse_swimstyle_node(event_info)
             elif event_info.tag == "AGEGROUPS":
-                age_string = self.__parse_agegroups_node(event_info)
+                age_string += self.__parse_agegroups_node(event_info)
 
         min_age, max_age, simplified_age = self.__simplify_age(age_string)
 
         print(f"Extracted number {number}:\t{gender}\t{simplified_age}\t{style}")
         
-        return dict(number = number,
-                    gender = gender,
-                    style = style,
-                    min_age = min_age,
-                    max_age = max_age,
-                    simplified_age = simplified_age
-                    )
+        return SwimMeetEvent(number, gender, style, min_age, max_age, simplified_age)
     
     def __parse_events(self, events_root: ET.Element, s: dict):
         for event in events_root:
@@ -149,7 +160,7 @@ class SwimMeet:
         session_attributes = session_root.attrib
         s = dict(session_number = session_attributes.get("number", "1"),
                  session_date = session_attributes.get("date", "?"),
-                 sessuib_start = session_attributes.get("daytime", "?"),
+                 session_start = session_attributes.get("daytime", "?"),
                  session_end = session_attributes.get("endtime", "?"),
                  session_warmup_start = session_attributes.get("warmupfrom", "?"),
                  session_warmup_until = session_attributes.get("warmupuntil", "?"),
@@ -195,5 +206,17 @@ class SwimMeet:
         self.__extract_general_information(meet_root)
         self.__parse_sessions(meet_root)
 
+    def get_all_events(self) -> list[SwimMeetEvent]:
+        return_list = list()
+        for session in self.program:
+            for event in self.program[session]["events"]:
+                return_list.append(event)
+        return return_list
+
     def __str__(self):
-        return f"MEET:\n{self.meet_name} in {self.city} ({self.course})\n{self.program}"
+        return_str = f"MEET:\n{self.meet_name} in {self.city} ({self.course})\n"
+        for session in self.program:
+            return_str += f"{session}\n"
+            for event in self.program[session]["events"]:
+                return_str += f"\t{str(event)}\n"
+        return return_str
