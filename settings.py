@@ -2,9 +2,12 @@ from easygui import diropenbox, fileopenbox
 
 import pickle
 import os
+import logging
+import logging.config
 
 class Settings:
     SAVE_FILE = ".settings.pk"
+    log = None
 
     def __init__(self):
         self.club_name = ""
@@ -28,6 +31,22 @@ class Settings:
         # Save current settings
         with open(Settings.SAVE_FILE, "wb") as fi:
             pickle.dump(setting, fi)
+        
 
         return setting
+    
+    @staticmethod
+    def get_logger():
+        if Settings.log is not None:
+            return Settings.log
+        
+        # Create the logging facilities
+        logging.config.fileConfig('logging.conf')
+        Settings.log = logging.getLogger('lenexToExcelLog')
+
+        Settings.log.debug("Logging initialized")
+
+        return Settings.log
+
+
         

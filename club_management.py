@@ -6,6 +6,7 @@ import re
 import os
 import csv
 import subprocess
+import logging
 
 class Gender(Enum):
     MALE = 1
@@ -31,8 +32,6 @@ class Swimmer:
         if meet_year_short - birth_year_short < 0:
             return meet_year_short + (100-birth_year_short)
 
-        temp = meet_year_short - birth_year_short
-
         return meet_year_short - birth_year_short
 
     def __str__(self):
@@ -42,9 +41,10 @@ class Swimmer:
 class Club:
     ACTIVE = "T"
 
-    def __init__(self, name: str):
+    def __init__(self, log: logging.Logger, name: str):
         self.members = dict()
         self.club_name = name
+        self.log = log
 
     def __fill_club_from_members_list(self, members_list: list):
         # Get the indices of the different fields of the headers

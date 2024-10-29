@@ -1,14 +1,16 @@
 import xlsxwriter
 import os
+import logging
 
 from easygui import multchoicebox
 from meet_management import SwimMeet, SwimMeetEvent
-from club_management import Club, Swimmer, Gender
+from club_management import Club, Swimmer
 
-class RegistrationExcel():
+class RegistrationExcel:
 
-    def __init__(self, meet_name: str):
+    def __init__(self, log: logging.Logger, meet_name: str):
         self.groups_to_use: list[str] = None
+        self.log = log
         self.__check_tmp_dir()
         self.__create_empty_excel(meet_name)
         self.__create_styles()
@@ -17,6 +19,7 @@ class RegistrationExcel():
         # check tmp folder present
         if not os.path.isdir("tmp"):
             os.mkdir("tmp")
+            self.log.debug("Created tmp folder")
     
     def __create_empty_excel(self, meet_name: str):
         '''Create empty base excel'''
@@ -24,7 +27,7 @@ class RegistrationExcel():
         name = meet_name.replace(' ', '-')
         self.file_path = f"tmp/inschrijving_{name}.xlsx"
         self.workbook = xlsxwriter.Workbook(self.file_path)
-        print("Excel initialized")
+        self.log.debug("Excel initialized")
     
     def __create_styles(self):
         self.styles = dict()
@@ -38,7 +41,7 @@ class RegistrationExcel():
         if self.groups_to_use == None:
             self.groups_to_use = multchoicebox("Select the groups to use", "Group selection", club.get_groups())
             self.groups_to_use.sort()
-        print(f"Selected groups: {self.groups_to_use}")
+        self.log.info(f"Selected groups: {self.groups_to_use}")
 
     def __add_general_information(self, sheet, meet: SwimMeet) -> int:
         '''Add general meet information at the top of the sheet
@@ -135,7 +138,7 @@ class RegistrationExcel():
                 self.swimmer_to_row_number[swimmer_name] = row_number
                 row_number += 1
 
-        print(','.join(self.groups_to_use) + " added to the register overview sheet")
+        self.log.info(','.join(self.groups_to_use) + " added to the register overview sheet")
 
         return row_number-1
 
@@ -175,6 +178,9 @@ class RegistrationExcel():
         
         if event.min_age > swimmer.get_age_at(meet_age_date) or event.max_age < swimmer.get_age_at(meet_age_date):
             return False
+
+        # TODO: check if we can register with NT
+        # TODO: limit times
     
         return True
 
@@ -187,8 +193,6 @@ class RegistrationExcel():
                     if not self.__check_possible_event(swimmer, event, meet.age_date):
                         sheet.write(self.swimmer_to_row_number[swimmer.name], self.event_to_column_number[event],
                                     "", cross_cell_style)
-
-
 
     def create_overview_registration_sheet(self, meet: SwimMeet, club: Club):
         sheet = self.workbook.add_worksheet(name="Inschrijving")

@@ -5,14 +5,17 @@ from datetime import date
 
 import xml.etree.ElementTree as ET
 import os
+import logging
 
 class LenexHelper:
-    def __init__(self, start_dir: str):
+    def __init__(self, log: logging.Logger, start_dir: str):
         self.start_dir = start_dir
+        self.log = log
 
         # Create tmp folder to unzip/rename
         if not os.path.isdir("tmp"):
             os.mkdir("tmp")
+            self.log.debug("Created tmp folder")
     
     def load_lenex(self):
         # Select the lenex
@@ -25,7 +28,7 @@ class LenexHelper:
         self.basename = os.path.basename(self.full_path)
         self.dirname = os.path.dirname(self.full_path)
 
-        print(f"Selected lenex: {self.basename}")
+        self.log.info(f"Selected lenex: {self.basename}")
         
     def extract_lef_from_lenex(self):
         # Check if the lef is already extracted
@@ -37,7 +40,7 @@ class LenexHelper:
                 # Extract the file
                 zipped_file.extractall(path="tmp")
 
-        print(f"Lef extracted from lenex (tmp/{self.extracted_filename})")
+        self.log.info(f"Lef extracted from lenex (tmp/{self.extracted_filename})")
 
     def load_xml_from_lef(self):
         self.xml_root = ET.parse(f"tmp/{self.extracted_filename}").getroot()
@@ -63,7 +66,7 @@ class SwimMeetEvent:
 class SwimMeet:
     """Class to group the information of a meet"""
 
-    def __init__(self) -> None:
+    def __init__(self, log: logging.Logger) -> None:
         # General meet information
         self.meet_name = None
         self.course = None
@@ -71,6 +74,8 @@ class SwimMeet:
         self.deadline = None
         self.age_date = None
         self.program = dict()
+
+        self.log = log
     
     def __extract_general_information(self, meet_root: ET.Element):
         today = date.today().strftime("%d%m%Y")
@@ -147,7 +152,7 @@ class SwimMeet:
 
         min_age, max_age, simplified_age = self.__simplify_age(age_string)
 
-        print(f"Extracted number {number}:\t{gender}\t{simplified_age}\t{style}")
+        self.log.debug(f"Extracted number {number}:\t{gender}\t{simplified_age}\t{style}")
         
         return SwimMeetEvent(number, gender, style, min_age, max_age, simplified_age)
     
