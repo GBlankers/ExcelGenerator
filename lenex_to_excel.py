@@ -1,7 +1,7 @@
 from club_management import *
 from settings import *
 from meet_management import *
-from registrationExcel import *
+from registration_excel import *
 
 def main() -> None:
     # Load or create the settings
@@ -24,7 +24,7 @@ def main() -> None:
 
     # Create the registration excel
     excel = RegistrationExcel(log, meet.meet_name)
-    excel.create_overview_registration_sheet(meet, club)
+    excel.add_overview_registration_sheet(meet, club)
     excel.close()
 
 

@@ -134,7 +134,7 @@ class SwimMeet:
         
         return age_min, age_max, simplified_str
     
-    def __extract_event_information(self, event: ET.Element) -> dict:
+    def __extract_event_information(self, event: ET.Element) -> SwimMeetEvent:
         # Event number
         number = int(event.attrib.get("number", "?"))
 
@@ -155,13 +155,18 @@ class SwimMeet:
 
         min_age, max_age, simplified_age = self.__simplify_age(age_string)
 
-        self.log.debug(f"Extracted number {number}:\t{gender}\t{simplified_age}\t{style}")
         
         return SwimMeetEvent(number, gender, style, min_age, max_age, simplified_age, round)
     
     def __parse_events(self, events_root: ET.Element, s: dict):
         for event in events_root:
-            s["events"].append(self.__extract_event_information(event))
+            event_info_node = self.__extract_event_information(event)
+
+            if event_info_node.round == "FIN":
+                self.log.debug(f"Skipped final number {event_info_node.number}:\t{event_info_node.gender}\t{event_info_node.simplified_age}\t{event_info_node.style}")
+
+            self.log.debug(f"Extracted number {event_info_node.number}:\t{event_info_node.gender}\t{event_info_node.simplified_age}\t{event_info_node.style}") 
+            s["events"].append(event_info_node)
     
     def __parse_session(self, session_root: ET.Element):
         # Extract general session information
