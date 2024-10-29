@@ -56,9 +56,10 @@ class SwimMeetEvent:
     min_age: int
     max_age: int
     simplified_age: str
+    round: str
 
     def __str__(self):
-        return f"#{self.number} {self.gender} {self.style} {self.simplified_age}"
+        return f"{self.round} #{self.number} {self.gender} {self.style} {self.simplified_age}"
 
     def __hash__(self):
         return hash(self.__str__())
@@ -141,6 +142,8 @@ class SwimMeet:
         gender = event.attrib.get("gender", "X")
         if gender == "X":
             gender = "Mixed"
+
+        round = event.attrib.get("round", "PRE")
         
         style = ""
         age_string = ""
@@ -154,7 +157,7 @@ class SwimMeet:
 
         self.log.debug(f"Extracted number {number}:\t{gender}\t{simplified_age}\t{style}")
         
-        return SwimMeetEvent(number, gender, style, min_age, max_age, simplified_age)
+        return SwimMeetEvent(number, gender, style, min_age, max_age, simplified_age, round)
     
     def __parse_events(self, events_root: ET.Element, s: dict):
         for event in events_root:
@@ -217,6 +220,9 @@ class SwimMeet:
             for event in self.program[session]["events"]:
                 return_list.append(event)
         return return_list
+
+    def get_events_in_session(self, session_name: str) -> list[SwimMeetEvent]:
+        return self.program[session_name]["events"]
 
     def __str__(self):
         return_str = f"MEET:\n{self.meet_name} in {self.city} ({self.course})\n"

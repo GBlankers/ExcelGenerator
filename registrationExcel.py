@@ -52,7 +52,7 @@ class RegistrationExcel:
 
         # Set column sizes
         sheet.set_column(col_number, col_number, 30)
-        sheet.set_column(col_number+1, col_number+60, 15)
+        sheet.set_column(col_number+1, col_number+150, 15)
 
         # Add club image
         sheet.set_row(row_number, 51)
@@ -145,12 +145,9 @@ class RegistrationExcel:
     def __add_events_overview_registration_sheet(self, sheet, meet: SwimMeet, start_row_events: int, start_row_swimmers: int, end_row: int):
         col_number = 1
 
-        session_cell_style = self.workbook.add_format({"rotation": -90, 
-                                                       "bold": True, 
-                                                       "bg_color": "gray", 
-                                                       "align": "center",
-                                                       "valign": "vcenter", 
-                                                       "text_wrap": True})
+        session_cell_format = dict(rotation = -90, bold = True, bg_color = "gray",
+                                   align = "center", valign = "vcenter", text_wrap = True)
+        session_cell_style = self.workbook.add_format(session_cell_format)
 
         self.event_to_column_number = dict()
         for session in meet.program:
@@ -161,15 +158,21 @@ class RegistrationExcel:
                               session_cell_style)
             
             col_number += 1
-            for event in session_info["events"]:
+            for event in meet.get_events_in_session(session_name=session):
+                if event.round == "FIN":
+                    continue
                 self.event_to_column_number[event] = col_number
-                sheet.write(start_row_events, col_number, f"# {event.number}")
+                sheet.write(start_row_events, col_number, f"{event.round} # {event.number}")
                 sheet.write(start_row_events+1, col_number, event.gender)
                 sheet.write(start_row_events+2, col_number, event.style)
                 sheet.write(start_row_events+3, col_number, event.simplified_age)
                 col_number += 1
 
     def __check_possible_event(self, swimmer: Swimmer, event: SwimMeetEvent, meet_age_date: str) -> bool:
+        # Finals will not be displayed in the excel -> skip
+        if event.round == "FIN":
+            return True
+
         # Check gender
         if event.gender == "F" and swimmer.gender == '1':
             return False

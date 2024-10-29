@@ -22,8 +22,6 @@ def main() -> None:
     meet = SwimMeet(log)
     meet.load_from_xml(lenex.xml_root)
 
-    print(meet.age_date)
-
     # Create the registration excel
     excel = RegistrationExcel(log, meet.meet_name)
     excel.create_overview_registration_sheet(meet, club)
