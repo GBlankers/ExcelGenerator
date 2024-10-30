@@ -1,9 +1,14 @@
-from club_management import *
-from settings import *
-from meet_management import *
-from registration_excel import *
+'''
+Main src file to run the lenex to excel program locally
+'''
+
+from settings import Settings
+from lib.club_management import Club
+from lib.meet_management import SwimMeet, LenexHelper
+from lib.registration_excel import RegistrationExcel
 
 def main() -> None:
+    '''Main to load setting, create a club, load in the competition and create the excel'''
     # Load or create the settings
     settings = Settings.init_settings()
     log = Settings.get_logger()
@@ -23,7 +28,7 @@ def main() -> None:
     meet.load_from_xml(lenex.xml_root)
 
     # Create the registration excel
-    excel = RegistrationExcel(log, meet.meet_name)
+    excel = RegistrationExcel(log, meet.meet_name, settings.club_logo_path)
     excel.add_overview_registration_sheet(meet, club)
     excel.add_summary_sheet(meet, club)
     excel.close()
