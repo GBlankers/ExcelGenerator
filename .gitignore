@@ -1,5 +1,6 @@
 venv/*
 tmp/*
+data/*
 excels/*
 __pycache__/*
 KAZSC.mdb
