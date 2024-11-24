@@ -3,7 +3,6 @@ Import the results lenex, extract all the rankings. Apply filters and put the re
 into an excel
 '''
 
-
 from settings import Settings
 from lib.meet_management import LenexHelper, MeetResults
 from lib.results_excel import ResultsExcel
@@ -23,26 +22,29 @@ def add_results_to_workbook(log, excel, filters):
                                meet_results.results_relays,
                                meet_results.meet_name)
 
-def main():
-    '''Main'''
-    # Create the settings for logging
-    log = Settings.get_logger()
+def create_bk_podia_excel(log) -> None:
+    '''For the 4 different BC's, extract the podia and put into excel'''
 
     # Create the filters
     basic_filters = ["ONLY_NAT=BEL", "ONLY_CLUB=BRABO", "ONLY_PODIUM"]
     basic_filters_finals = basic_filters.copy()
     basic_filters_finals.append("ONLY_FINALS")
 
-    results_excel = ResultsExcel(log, "results")
+    results_excel = ResultsExcel(log, "BK_PODIA")
     log.info("BK Open")
     add_results_to_workbook(log, results_excel, basic_filters_finals)
-    # log.info("BK 25M")
-    # add_results_to_workbook(log, results_excel, basic_filters_finals)
-    # log.info("BK Cat 1")
-    # add_results_to_workbook(log, results_excel, basic_filters)
-    # log.info("BK Cat 2")
-    # add_results_to_workbook(log, results_excel, basic_filters_finals)
+    log.info("BK 25M")
+    add_results_to_workbook(log, results_excel, basic_filters_finals)
+    log.info("BK Cat 1")
+    add_results_to_workbook(log, results_excel, basic_filters)
+    log.info("BK Cat 2")
+    add_results_to_workbook(log, results_excel, basic_filters_finals)
     results_excel.close()
+
+def main():
+    '''Main'''
+    create_bk_podia_excel(Settings.get_logger())
+
 
 if __name__ == "__main__":
     main()
