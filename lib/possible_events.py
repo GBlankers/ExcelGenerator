@@ -41,6 +41,10 @@ class PossibleEvents:
                     else:
                         self.swimmer_invalid_event_dict[swimmer.name].append(event)
 
+    def get_valid_events_for_swimmer(self, swimmer_name: str) -> list[SwimMeetEvent]:
+        '''Get a list of all the valid events for a given swimmer'''
+        return self.swimmer_possible_event_dict[swimmer_name]
+
     def get_invalid_events_for_swimmer(self, swimmer_name: str) -> list[SwimMeetEvent]:
         '''Get a list of all the invalid events for a given swimmer'''
         return self.swimmer_invalid_event_dict[swimmer_name]

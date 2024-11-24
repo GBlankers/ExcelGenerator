@@ -31,6 +31,7 @@ def main() -> None:
     excel = RegistrationExcel(log, meet.meet_name, settings.club_logo_path)
     excel.add_overview_registration_sheet(meet, club)
     excel.add_summary_sheet(meet, club)
+    excel.add_valid_events_sheet(meet, club)
     excel.close()
 
 

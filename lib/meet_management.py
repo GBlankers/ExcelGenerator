@@ -54,8 +54,14 @@ class LenexHelper:
             with ZipFile(self.full_path, 'r') as zipped_file:
                 # There will only be 1 file, get the name
                 self.extracted_filename = zipped_file.namelist()[0]
+                self.log.debug(f"Files in zip {zipped_file.namelist()}")
+                self.log.debug(f"Extracted lef {self.extracted_filename}")
+                if self.extracted_filename == "None":
+                    self.extracted_filename = f"{os.path.splitext(self.basename)[0]}.lef"
                 # Extract the file
                 zipped_file.extractall(path="tmp")
+        else:
+            self.extracted_filename = f"{os.path.splitext(self.basename)[0]}.lef"
 
         self.log.info(f"Lef extracted from lenex (tmp/{self.extracted_filename})")
 

@@ -250,10 +250,8 @@ class SummarySheet(_Sheet):
             for swimmer_name in club.get_swimmer_names_from_group(group):
                 local_row = self.swimmer_to_row_number[swimmer_name]
                 register_row = register_sheet.swimmer_to_row_number[swimmer_name] + 1
-                form = f'=_xlfn.TEXTJOIN(", ", TRUE, IF(ISBLANK(Inschrijving!C{register_row}: \
-                        {final_column_letter + str(register_row)}), "", {register_sheet.name} \
-                        !C{register_sheet.event_name_row_nr+1}:{final_column_letter} \
-                        {register_sheet.event_name_row_nr+1}))'
+                form = f'=_xlfn.TEXTJOIN(", ", TRUE, IF(ISBLANK(Inschrijving!C{register_row}:{final_column_letter + str(register_row)}), "", {register_sheet.name}!C{register_sheet.event_name_row_nr+1}:{final_column_letter}{register_sheet.event_name_row_nr+1}))'
+                self.log.debug(form)
                 self.sheet.write_array_formula(local_row, 1, local_row, 1, form)
 
     def fill_sheet(self, meet: SwimMeet, club: Club, register_sheet: OverviewRegistrationSheet):
@@ -267,6 +265,60 @@ class SummarySheet(_Sheet):
 
         # Add the excel formula to create a summary
         self.__add_summary(club, register_sheet)
+
+class ValidEventsSheet(_Sheet):
+    '''Registration excel sheet to give an overview of the different
+       events that are possible for every swimmer'''
+
+    def __add_swimmers_and_events(self, club: Club, possible_events: PossibleEvents, s_row: int):
+        col_number = 0
+        row_number = s_row
+
+        header_style = self.workbook.add_format({'bold': True, 'align': 'center'})
+        header_style.set_bottom()
+
+        self.sheet.write(row_number, col_number, "Swimmers", header_style)
+        self.sheet.write(row_number, col_number+1, "Possible events", header_style)
+        self.sheet.write(row_number, col_number+2, "Selected events", header_style)
+
+        self.sheet.set_column(col_number+1, col_number+2, 30)
+
+        row_number += 1
+
+        for group in self.groups_to_use:
+            self.sheet.merge_range(row_number, col_number, row_number, col_number+2,
+                                   group, self.styles["group_name"])
+            row_number += 1
+
+            for swimmer_name in club.get_swimmer_names_from_group(group):
+                self.sheet.write(row_number, col_number, swimmer_name)
+                events = possible_events.get_valid_events_for_swimmer(swimmer_name)
+
+                if len(events) == 0:
+                    self.sheet.write(row_number, col_number+1,
+                                     "No events possible for this swimmer")
+                    continue
+
+                for event in events:
+                    self.sheet.write(row_number, col_number+1,
+                                     f"#{event.number} {event.style} \
+                                     {event.simplified_age}")
+                    row_number += 1
+
+                row_number += 1
+
+
+    def fill_sheet(self, meet: SwimMeet, club: Club, possible_events: PossibleEvents):
+        '''Fill in the valid events sheet. I.e. For every swimmer,
+           give an overview of all the different events he/she can
+           pariticipate in'''
+
+        # Add the general information
+        start_row = super().add_general_information(meet)
+
+        # Start adding the swimmers and events
+        self.__add_swimmers_and_events(club, possible_events, start_row)
+
 
 class RegistrationExcel:
     '''Class to group all the data concering the registration excel'''
@@ -349,6 +401,20 @@ class RegistrationExcel:
         sum_s = SummarySheet(self.workbook, "Summary", groups, self.log, self.club_logo_path)
         sum_s.fill_sheet(meet, club, ors)
         self.sheets.append(sum_s)
+
+    def add_valid_events_sheet(self, meet: SwimMeet, club: Club):
+        '''Add a sheet with all the valid events per swimmers'''
+
+        # Get the groups we want to include
+        groups = self.__get_groups_to_use(club)
+
+        # Get the possible events for every swimmer
+        pos_events = self.__get_possible_events(meet, club)
+
+        valid_events_sheet = ValidEventsSheet(self.workbook, "Individueel", groups, self.log,
+                                              self.club_logo_path)
+        valid_events_sheet.fill_sheet(meet, club, pos_events)
+        self.sheets.append(valid_events_sheet)
 
     def close(self):
         '''Close and save the registration excel'''

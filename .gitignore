@@ -3,6 +3,7 @@ tmp/*
 data/*
 excels/*
 __pycache__/*
+lib/__pycache__**
 KAZSC.mdb
 .settings.pk
 .vscode
